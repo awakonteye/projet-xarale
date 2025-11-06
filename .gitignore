@@ -1,0 +1,8 @@
+Commande ECHO activ�e.
+# Node.js / Angular
+node_modules/
+dist/
+
+# Java / Spring Boot
+target/
+*.log
