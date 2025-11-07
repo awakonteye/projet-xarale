@@ -1,0 +1,13 @@
+# Development Dockerfile for Spring Boot with hot reload
+FROM maven:3.9.6-eclipse-temurin-21
+WORKDIR /app
+
+# Copy pom.xml and download dependencies (cached layer)
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+# Expose port
+EXPOSE 2000
+
+# Default command - runs Spring Boot with hot reload via DevTools
+CMD ["mvn", "spring-boot:run", "-Dspring-boot.run.fork=false"]
