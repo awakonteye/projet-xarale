@@ -1,0 +1,90 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: crud-xarala-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: crud-xarala
+      MYSQL_USER: xarala
+      MYSQL_PASSWORD: xaralapassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-prootpassword",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - xarala-network
+
+  backend:
+    build:
+      context: ./backend/crud-xarala (1)/crud-xarala
+      dockerfile: Dockerfile.dev
+    container_name: crud-xarala-backend
+    ports:
+      - "2000:2000"
+      - "35729:35729" # LiveReload port
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/crud-xarala?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpassword
+    volumes:
+      - ./backend/crud-xarala (1)/crud-xarala/src:/app/src
+      - ./backend/crud-xarala (1)/crud-xarala/pom.xml:/app/pom.xml
+      - maven_cache:/root/.m2
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - xarala-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend/crud-front
+      dockerfile: Dockerfile.dev
+    container_name: crud-xarala-frontend
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      CHOKIDAR_USEPOLLING: "true" # Enable file watching in Docker
+    volumes:
+      - ./frontend/crud-front/src:/app/src
+      - ./frontend/crud-front/server.ts:/app/server.ts
+      - ./frontend/crud-front/angular.json:/app/angular.json
+      - ./frontend/crud-front/tsconfig.json:/app/tsconfig.json
+      - ./frontend/crud-front/tsconfig.app.json:/app/tsconfig.app.json
+      - ./frontend/crud-front/tsconfig.spec.json:/app/tsconfig.spec.json
+      - ./frontend/crud-front/package.json:/app/package.json
+      - ./frontend/crud-front/package-lock.json:/app/package-lock.json
+      - node_modules:/app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - xarala-network
+    restart: unless-stopped
+
+networks:
+  xarala-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  maven_cache:
+  node_modules:
